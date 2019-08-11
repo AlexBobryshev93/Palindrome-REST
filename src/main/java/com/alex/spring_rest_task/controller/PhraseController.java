@@ -3,24 +3,20 @@ package com.alex.spring_rest_task.controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static java.lang.Integer.compare;
 
 @RestController
 @RequestMapping("phrase")
 public class PhraseController {
-    private int counter = 4;
-    private List<Map<String, String>> phrases = new ArrayList<Map<String, String>>() {{
+    private int counter /* = 4*/;
+    private int foundId;
+    private List<Map<String, String>> phrases = new ArrayList<Map<String, String>>() /* {{
         add(new HashMap<String, String>() {{put("id", "1"); put("player", "player1"); put("phrase", "Anna");}});
         add(new HashMap<String, String>() {{put("id", "2"); put("player", "player2"); put("phrase", "civic");}});
         add(new HashMap<String, String>() {{put("id", "3"); put("player", "player1"); put("phrase", "rotor");}});
-    }};
+    }} */ ;
 
     @GetMapping
     public Map<String, Integer> leaders() {
-
         Map<String, Integer> leaders = new HashMap<>();
         Integer points;
 
@@ -41,13 +37,16 @@ public class PhraseController {
 
     @PostMapping
     public Map<String, Integer> postPhrase(@RequestParam String playerName, @RequestParam String phrase) {
-        if (isPalindrome(phrase) && isUnique(phrase)) {
-            phrases.add(new HashMap<String, String>() {{put("id", String.valueOf(counter)); put("player", playerName); put("phrase", phrase);}});
-            return new HashMap<String, Integer>() {{put("id", counter++); put("points", phrase.length());}};
-        } else return new HashMap<String, Integer>() {{put("id", 0); put("points", 0);}};
+        if (isPalindrome(phrase)) {
+            if (isUnique(phrase)) {
+                phrases.add(new HashMap<String, String>() {{put("id", String.valueOf(++counter)); put("player", playerName); put("phrase", phrase);}});
+                return new HashMap<String, Integer>() {{put("id", counter); put("points", phrase.length());}};
+            } else return new HashMap<String, Integer>() {{put("id", foundId); put("points", 0);}};
+        }
+        else return new HashMap<String, Integer>() {{put("id", 0); put("points", 0);}};
     }
 
-    public boolean isPalindrome(String str) {
+    private boolean isPalindrome(String str) {
         if (str == null) {
             return false;
         }
@@ -60,13 +59,17 @@ public class PhraseController {
         return true;
     }
 
-    public boolean isUnique(String str) {
+    private boolean isUnique(String str) {
         if (str == null) {
             return false;
         }
 
+        String s = str.trim().toLowerCase();
         for (Map<String, String> map : phrases) {
-            if (map.get("phrase").equals(str)) return false;
+            if (map.get("phrase").trim().toLowerCase().equals(s)) {
+                foundId = Integer.parseInt(map.get("id"));
+                return false;
+            }
         }
 
         return true;
