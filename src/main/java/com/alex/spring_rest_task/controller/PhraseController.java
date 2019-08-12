@@ -3,6 +3,7 @@ package com.alex.spring_rest_task.controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("phrase")
@@ -17,33 +18,40 @@ public class PhraseController {
 
     @GetMapping
     public Map<String, Integer> leaders() {
-        Map<String, Integer> leaders = new HashMap<>();
-        Integer points;
-
-        for (Map<String, String> map : phrases) {
-            if (leaders.get(map.get("player")) != null) {
-                points = leaders.get(map.get("player"));
-                points += map.get("phrase").length();
-                leaders.put(map.get("player"), points);
-            } else leaders.put(map.get("player"), map.get("phrase").length());
-        }
-/*
         Map<String, Integer> leaders = phrases.stream()
-                .map(phrase -> new TreeMap<String, Integer>() {{put(phrase.get("player"), phrase.get("phrase").length());}})
-                .sorted(Comparator.comparing(p -> ((List<Integer>) p.values()).get(0)))
-                .collect(Collectors.toMap(Function.identity()); */
-        return leaders;
+                .map(e -> new HashMap<String, Integer>() {{
+                    put(e.get("player"), e.get("phrase")
+                        .replaceAll("[^a-zA-Z0-9]", "") // [^a-zA-Z0-9] removes every symbol except letters and numbers
+                        .length());
+                    }})
+                .collect(HashMap::new,
+                        (a, b) -> b.forEach((k, v) -> a.merge(k, v, Integer::sum)),
+                        Map::putAll);
+
+        return leaders.entrySet().stream()
+                .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue())) // descending
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+                        (e1, e2) -> e1, LinkedHashMap::new));
     }
 
     @PostMapping
     public Map<String, Integer> postPhrase(@RequestParam String playerName, @RequestParam String phrase) {
         if (isPalindrome(phrase)) {
             if (isUnique(phrase)) {
-                phrases.add(new HashMap<String, String>() {{put("id", String.valueOf(++counter)); put("player", playerName); put("phrase", phrase);}});
-                return new HashMap<String, Integer>() {{put("id", counter); put("points", phrase.length());}};
-            } else return new HashMap<String, Integer>() {{put("id", foundId); put("points", 0);}};
+                phrases.add(new HashMap<String, String>() {{
+                    put("id", String.valueOf(++counter));
+                    put("player", playerName);
+                    put("phrase", phrase);
+                }});
+
+                return new HashMap<String, Integer>() {{
+                    put("id", counter);
+                    put("points", phrase.replaceAll("[^a-zA-Z0-9]", "").length());
+                }};
+
+            } else return new HashMap<String, Integer>() {{put("id", foundId); put("points", 0);}}; // if not unique
         }
-        else return new HashMap<String, Integer>() {{put("id", 0); put("points", 0);}};
+        else return new HashMap<String, Integer>() {{put("id", 0); put("points", 0);}}; // if not palindrome
     }
 
     private boolean isPalindrome(String str) {
@@ -51,7 +59,7 @@ public class PhraseController {
             return false;
         }
 
-        String s = str.trim().toLowerCase();
+        String s = str.toLowerCase().replaceAll("[^a-zA-Z0-9]", ""); // [^a-zA-Z0-9] removes every symbol except letters and numbers
         for (int i = 0; i < s.length() / 2; i++) {
             if (s.charAt(i) != s.charAt(s.length() - 1 - i)) return false;
         }
@@ -64,9 +72,9 @@ public class PhraseController {
             return false;
         }
 
-        String s = str.trim().toLowerCase();
+        String s = str.toLowerCase().replaceAll("[^a-zA-Z0-9]", ""); // [^a-zA-Z0-9] removes every symbol except letters and numbers
         for (Map<String, String> map : phrases) {
-            if (map.get("phrase").trim().toLowerCase().equals(s)) {
+            if (map.get("phrase").toLowerCase().replaceAll("[^a-zA-Z0-9]", "").equals(s)) { // [^a-zA-Z0-9] removes every symbol except letters and numbers
                 foundId = Integer.parseInt(map.get("id"));
                 return false;
             }
