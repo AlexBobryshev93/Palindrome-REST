@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("phrase")
+@RequestMapping(value = "phrase", produces = "application/json")
 public class PhraseController {
     private int counter /* = 4*/;
     private int foundId;
